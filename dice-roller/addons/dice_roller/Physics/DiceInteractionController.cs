@@ -19,6 +19,10 @@ public partial class DiceInteractionController : Node3D
     int _rotationDirection;
     RayCast3D _mouseRay = null!;
     Timer _rotateTicks = null!;
+    Area3D _grabArea = null!;
+    CollisionShape3D _grabShape = null!;
+    Area3D _minDistance = null!;
+    Area3D _maxDistance = null!;
     Action? _hoveredMouseExited;
 
     public override void _Ready()
@@ -33,6 +37,17 @@ public partial class DiceInteractionController : Node3D
 
         _rotateTicks = GetNode<Timer>("RotateTicks");
         _rotateTicks.Timeout += OnRotateTicksTimeout;
+
+        _grabArea = GetNode<Area3D>("GrabArea");
+        _grabShape = GetNode<CollisionShape3D>("GrabArea/CollisionShape");
+        _minDistance = GetNode<Area3D>("MinDistance");
+        _maxDistance = GetNode<Area3D>("MinDistance/MaxDistance");
+        _grabArea.GravityPoint = true;
+        _grabArea.GravityPointCenter = Vector3.Zero;
+        _grabArea.Gravity = 100f;
+        _grabArea.LinearDamp = 10f;
+        _grabArea.AngularDamp = 20f;
+        SetGrabOverride(false);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -74,8 +89,29 @@ public partial class DiceInteractionController : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event is InputEventMouseButton released &&
+            released.ButtonIndex == MouseButton.Left &&
+            !released.Pressed)
+        {
+            SetGrabOverride(false);
+        }
+
+        if (@event is InputEventMouseMotion)
+            _grabArea.Position = _mousePosition;
+
         if (_hoveredDie is null || !GodotObject.IsInstanceValid(_hoveredDie))
+        {
+            if (@event is InputEventMouseButton empty &&
+                empty.ButtonIndex == MouseButton.Left &&
+                empty.Pressed)
+            {
+                _draggingHeight = DragMath.GrabHeightFromRadius(GrabRadius());
+                _grabArea.Position = _mousePosition;
+                SetGrabOverride(true);
+            }
+
             return;
+        }
 
         if (@event is InputEventMouseMotion && _hoveredDie.Interaction == InteractionState.Clicked)
             BeginDrag(_hoveredDie);
@@ -250,8 +286,20 @@ public partial class DiceInteractionController : Node3D
     void MoveDieToMouse(DieBody die)
     {
         ResetForces(die);
-        die.GlobalPosition = new Vector3(_mousePosition.X, _draggingHeight, _mousePosition.Z);
+        var dragPosition = new Vector3(_mousePosition.X, _draggingHeight, _mousePosition.Z);
+        dragPosition = AvoidObstacles(dragPosition);
+        die.GlobalPosition = dragPosition;
         RotateRolledSideUp(die);
+    }
+
+    Vector3 AvoidObstacles(Vector3 dragPosition)
+    {
+        _minDistance.Position = dragPosition;
+        int minOverlaps = _minDistance.GetOverlappingBodies().Count;
+        int maxOverlaps = _maxDistance.GetOverlappingBodies().Count;
+        _draggingHeight = DragMath.NextDraggingHeight(
+            _draggingHeight, minOverlaps, maxOverlaps, MinDraggingHeight);
+        return new Vector3(_mousePosition.X, _draggingHeight, _mousePosition.Z);
     }
 
     void RotateRolledSideUp(DieBody die)
@@ -274,6 +322,19 @@ public partial class DiceInteractionController : Node3D
         ResetForces(die);
         _draggingHeight = MinDraggingHeight;
         float y = die.GetOriginToLowestYHeight();
+
+        var ray = new RayCast3D { CollisionMask = 2 };
+        AddChild(ray);
+        ray.GlobalPosition = die.GlobalPosition;
+        ray.TargetPosition = Vector3.Down * die.GlobalPosition.DistanceTo(Vector3.Zero);
+        ray.AddException(die);
+        ray.ForceRaycastUpdate();
+
+        var hitDie = ray.GetCollider() as DieBody;
+        float? highest = hitDie is null ? null : hitDie.GetHighestYPositionGlobal();
+        y = DragMath.PutDownOriginY(y, highest);
+        ray.QueueFree();
+
         die.GlobalPosition = new Vector3(_mousePosition.X, y, _mousePosition.Z);
         die.SetLocked(true);
     }
@@ -323,4 +384,15 @@ public partial class DiceInteractionController : Node3D
 
         Input.SetDefaultCursorShape(web ? Input.CursorShape.Drag : Input.CursorShape.CanDrop);
     }
+
+    void SetGrabOverride(bool on)
+    {
+        var mode = on ? Area3D.SpaceOverride.Replace : Area3D.SpaceOverride.Disabled;
+        _grabArea.GravitySpaceOverride = mode;
+        _grabArea.LinearDampSpaceOverride = mode;
+        _grabArea.AngularDampSpaceOverride = mode;
+    }
+
+    float GrabRadius() =>
+        _grabShape.Shape is SphereShape3D sphere ? sphere.Radius : 8f;
 }

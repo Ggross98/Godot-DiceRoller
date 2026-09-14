@@ -37,4 +37,18 @@ public static class DragMath
 
         return new AxisAngle(axis.Normalized(), sideDirection.AngleTo(Vector3.Up));
     }
+
+    public static float PutDownOriginY(float originToLowestY, float? hitDieHighestY) =>
+        hitDieHighestY is float highest ? originToLowestY + highest : originToLowestY;
+
+    public static float NextDraggingHeight(float current, int minOverlaps, int maxOverlaps, float minHeight)
+    {
+        if (minOverlaps > 1)
+            return current + 0.1f;
+        if (maxOverlaps <= 1 && current > minHeight)
+            return current - 0.1f;
+        return current;
+    }
+
+    public static float GrabHeightFromRadius(float radius) => radius / 2f;
 }

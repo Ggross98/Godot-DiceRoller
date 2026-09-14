@@ -54,4 +54,40 @@ public class DragMathTests
         Assert.False(rotation.HasValue);
         Assert.True(sideDir.IsEqualApprox(Vector3.Up));
     }
+
+    [Fact]
+    public void PutDownOriginY_without_hit_is_lowest_height()
+    {
+        Assert.Equal(0.58f, DragMath.PutDownOriginY(0.58f, null));
+    }
+
+    [Fact]
+    public void PutDownOriginY_with_hit_adds_highest_y()
+    {
+        Assert.Equal(1.16f, DragMath.PutDownOriginY(0.58f, 0.58f));
+    }
+
+    [Fact]
+    public void NextDraggingHeight_lifts_when_min_overlaps_more_than_one()
+    {
+        Assert.Equal(1.1f, DragMath.NextDraggingHeight(1f, minOverlaps: 2, maxOverlaps: 2, minHeight: 1f), 3);
+    }
+
+    [Fact]
+    public void NextDraggingHeight_lowers_when_max_overlaps_at_most_one()
+    {
+        Assert.Equal(1.1f, DragMath.NextDraggingHeight(1.2f, minOverlaps: 1, maxOverlaps: 1, minHeight: 1f), 3);
+    }
+
+    [Fact]
+    public void NextDraggingHeight_stays_at_min_when_clear()
+    {
+        Assert.Equal(1f, DragMath.NextDraggingHeight(1f, minOverlaps: 1, maxOverlaps: 1, minHeight: 1f), 3);
+    }
+
+    [Fact]
+    public void GrabHeightFromRadius_is_half_radius()
+    {
+        Assert.Equal(4f, DragMath.GrabHeightFromRadius(8f));
+    }
 }

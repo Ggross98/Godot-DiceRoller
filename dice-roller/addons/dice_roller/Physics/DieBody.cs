@@ -158,6 +158,20 @@ public partial class DieBody : RigidBody3D
         return originY - lowestY;
     }
 
+    public float GetHighestYPositionGlobal()
+    {
+        float highestY = ToGlobal(Vector3.Zero).Y;
+        int count = _meshTool.GetVertexCount();
+        for (int i = 0; i < count; i++)
+        {
+            float vertexY = ToGlobal(_meshTool.GetVertex(i)).Y;
+            if (vertexY > highestY)
+                highestY = vertexY;
+        }
+
+        return highestY;
+    }
+
     public void Die()
     {
         if (_despawning)

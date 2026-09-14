@@ -14,6 +14,15 @@ size = Vector3(10, 0.2, 10)
 [sub_resource type="BoxShape3D" id="Shape_floor"]
 size = Vector3(10, 0.2, 10)
 
+[sub_resource type="SphereShape3D" id="Sphere_min"]
+radius = 1.2
+
+[sub_resource type="SphereShape3D" id="Sphere_max"]
+radius = 2.0
+
+[sub_resource type="SphereShape3D" id="Sphere_grab"]
+radius = 8.0
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_app")
 
@@ -43,6 +52,31 @@ script = ExtResource("3_interact")
 
 [node name="RotateTicks" type="Timer" parent="DiceInteractions"]
 wait_time = 0.2
+
+[node name="MinDistance" type="Area3D" parent="DiceInteractions"]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape" type="CollisionShape3D" parent="DiceInteractions/MinDistance"]
+shape = SubResource("Sphere_min")
+
+[node name="MaxDistance" type="Area3D" parent="DiceInteractions/MinDistance"]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape" type="CollisionShape3D" parent="DiceInteractions/MinDistance/MaxDistance"]
+shape = SubResource("Sphere_max")
+
+[node name="GrabArea" type="Area3D" parent="DiceInteractions"]
+collision_layer = 0
+collision_mask = 2
+gravity_point = true
+gravity = 100.0
+linear_damp = 10.0
+angular_damp = 20.0
+
+[node name="CollisionShape" type="CollisionShape3D" parent="DiceInteractions/GrabArea"]
+shape = SubResource("Sphere_grab")
 
 [node name="Hud" type="CanvasLayer" parent="."]
 
