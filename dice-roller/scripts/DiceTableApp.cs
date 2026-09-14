@@ -1,6 +1,7 @@
 using DiceRoller.Core;
 using DiceRoller.Physics;
 using DiceRoller.Session;
+using DiceRoller.Settings;
 using Godot;
 
 #nullable enable
@@ -10,13 +11,27 @@ public partial class DiceTableApp : Node3D
     // Phase 3: the `roll` action (Space / R) spawns a standard numeric d6.
     // Phase 6/7 will switch Space back to RollAll.
     DiceManager _manager = null!;
+    ArenaController _arena = null!;
+    Camera3D _camera = null!;
+    Timer _resizeTicks = null!;
+    Timer _zoomTicks = null!;
+    SettingsStore _settings = null!;
     Label _outcomeLabel = null!;
     RollOutcome? _lastOutcome;
+    bool _sizeUp;
+    bool _zoomIn;
 
     public override void _Ready()
     {
         _manager = GetNode<DiceManager>("DiceManager");
+        _arena = GetNode<ArenaController>("Box");
+        _camera = GetNode<Camera3D>("Camera3D");
+        _resizeTicks = GetNode<Timer>("Box/ResizeTicks");
+        _zoomTicks = GetNode<Timer>("Camera3D/ZoomTicks");
+        _settings = GetNode<SettingsStore>("/root/SettingsStore");
         _outcomeLabel = GetNode<Label>("Hud/OutcomeLabel");
+        _resizeTicks.Timeout += OnResizeTicksTimeout;
+        _zoomTicks.Timeout += OnZoomTicksTimeout;
         var session = GetNode<DiceSession>("/root/DiceSession");
         session.Recorded += OnRecorded;
         _manager.Spawned += _ => RefreshHud();
@@ -25,7 +40,9 @@ public partial class DiceTableApp : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        // Mouse hover/drag/lock belongs to DiceInteractionController; do not consume pointer events here.
+        HandleZoomEvent(@event);
+
+        // LMB grab/lock belongs to DiceInteractionController; this node only uses the wheel for zoom/resize.
         if (@event.IsActionPressed("roll"))
         {
             _manager.SpawnStandard(HullKind.D6);
@@ -49,6 +66,31 @@ public partial class DiceTableApp : Node3D
             return;
         }
 
+        if (@event.IsActionPressed("zoom_in"))
+        {
+            _zoomIn = true;
+            Zoom();
+            _zoomTicks.Start();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (@event.IsActionPressed("zoom_out"))
+        {
+            _zoomIn = false;
+            Zoom();
+            _zoomTicks.Start();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (@event.IsActionReleased("zoom_in") || @event.IsActionReleased("zoom_out"))
+        {
+            _zoomTicks.Stop();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event is InputEventKey key && key.Pressed && !key.Echo)
         {
             if (key.Keycode == Key.F2)
@@ -62,6 +104,83 @@ public partial class DiceTableApp : Node3D
                 GetViewport().SetInputAsHandled();
             }
         }
+    }
+
+    void HandleZoomEvent(InputEvent @event)
+    {
+        if (@event is not InputEventWithModifiers)
+            return;
+
+        float scrollInversion = _settings.Get("invert_scroll", false) ? -1f : 1f;
+        float resizeInversion = _settings.Get("invert_resize", false) ? -1f : 1f;
+
+        if (@event is InputEventMagnifyGesture magnify)
+        {
+            if (magnify.AltPressed || magnify.ShiftPressed)
+            {
+                if (magnify.Factor > 1f)
+                {
+                    _sizeUp = true;
+                    _arena.Resize(true, (magnify.Factor - 1f) * 5f);
+                }
+                else if (magnify.Factor < 1f)
+                {
+                    _sizeUp = false;
+                    _arena.Resize(false, (magnify.Factor - 1f) * -5f);
+                }
+            }
+            else if (magnify.Factor > 1f)
+            {
+                _zoomIn = true;
+                Zoom((magnify.Factor - 1f) * 5f);
+            }
+            else if (magnify.Factor < 1f)
+            {
+                _zoomIn = false;
+                Zoom((magnify.Factor - 1f) * -5f);
+            }
+
+            return;
+        }
+
+        if (@event is not InputEventMouseButton mouse)
+            return;
+
+        if (mouse.AltPressed || mouse.ShiftPressed)
+        {
+            if (@event.IsActionPressed("scroll_up"))
+            {
+                _sizeUp = true;
+                _arena.Resize(true, resizeInversion);
+            }
+            else if (@event.IsActionPressed("scroll_down"))
+            {
+                _sizeUp = false;
+                _arena.Resize(false, resizeInversion);
+            }
+
+            return;
+        }
+
+        if (@event.IsActionPressed("scroll_up"))
+        {
+            _zoomIn = true;
+            Zoom(scrollInversion);
+        }
+        else if (@event.IsActionPressed("scroll_down"))
+        {
+            _zoomIn = false;
+            Zoom(scrollInversion);
+        }
+    }
+
+    void OnResizeTicksTimeout() => _arena.Resize(_sizeUp);
+
+    void OnZoomTicksTimeout() => Zoom();
+
+    void Zoom(float zoomFactor = 1f)
+    {
+        _camera.Position = ArenaMath.ZoomCamera(_camera.Position, _zoomIn, zoomFactor);
     }
 
     void OnRecorded(RollOutcome outcome)
@@ -111,6 +230,6 @@ public partial class DiceTableApp : Node3D
             }
         }
 
-        _outcomeLabel.Text = $"{outcomeLine}\nlayout[6]={layout6}";
+        _outcomeLabel.Text = $"{outcomeLine}\nlayout[6]={layout6}\nWheel: zoom  Shift+wheel: arena";
     }
 }

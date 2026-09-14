@@ -41,7 +41,7 @@ public partial class DiceManager : Node3D
 
     public override void _Ready()
     {
-        FloorCollision ??= GetNodeOrNull<CollisionShape3D>("../Floor/CollisionShape3D");
+        FloorCollision ??= GetNodeOrNull<CollisionShape3D>("../Box/Floor/CollisionShape3D");
         _settings = GetNode<SettingsStore>("/root/SettingsStore");
         _session = GetNode<DiceSession>("/root/DiceSession");
         _settings.Changed += OnSettingChanged;
@@ -137,18 +137,24 @@ public partial class DiceManager : Node3D
         LastSpawned = null;
     }
 
+    public void WakeAll()
+    {
+        foreach (var die in Dice())
+            die.Sleeping = false;
+    }
+
     public void RandomizeThrow(DieBody die)
     {
-        float floorHalfX = 5f;
-        float floorHalfZ = 5f;
+        float floorHalfX = 25f;
+        float floorHalfZ = 25f;
         if (FloorCollision?.Shape is BoxShape3D box)
         {
             floorHalfX = box.Size.X / 2f;
             floorHalfZ = box.Size.Z / 2f;
         }
 
-        int areaSizeX = (int)floorHalfX;
-        int areaSizeZ = (int)floorHalfZ;
+        int areaSizeX = ArenaMath.ScaledHalfExtent(floorHalfX, AreaScale);
+        int areaSizeZ = ArenaMath.ScaledHalfExtent(floorHalfZ, AreaScale);
         int minThrowHeight = (int)Math.Ceiling(AreaScale * 10f);
         die.GlobalPosition = new Vector3(
             RandomValueInRange(0, areaSizeX / 2, true),

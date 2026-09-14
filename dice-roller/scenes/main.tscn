@@ -3,16 +3,23 @@
 [ext_resource type="Script" uid="uid://c8k2dice0tableapp" path="res://scripts/DiceTableApp.cs" id="1_app"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceManager.cs" id="2_manager"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceInteractionController.cs" id="3_interact"]
+[ext_resource type="PackedScene" uid="uid://cwall0dicebox01" path="res://World/wall.tscn" id="4_wall"]
+[ext_resource type="Script" path="res://addons/dice_roller/Physics/ArenaController.cs" id="5_arena"]
+[ext_resource type="Material" path="res://dice/materials/outline.tres" id="6_outline"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
+shading_mode = 2
 albedo_color = Color(0.329412, 0.305882, 0.407843, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_floor"]
 material = SubResource("Mat_floor")
-size = Vector3(10, 0.2, 10)
+size = Vector3(50, 0.2, 50)
 
-[sub_resource type="BoxShape3D" id="Shape_floor"]
-size = Vector3(10, 0.2, 10)
+[sub_resource type="BoxMesh" id="Mesh_floor_border"]
+size = Vector3(50, 0.2, 50)
+
+[sub_resource type="BoxShape3D" id="Shape_box"]
+size = Vector3(50, 20, 50)
 
 [sub_resource type="SphereShape3D" id="Sphere_min"]
 radius = 1.2
@@ -26,15 +33,55 @@ radius = 8.0
 [node name="Main" type="Node3D"]
 script = ExtResource("1_app")
 
-[node name="Floor" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
-collision_layer = 1
+[node name="Box" type="Node3D" parent="."]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0)
+script = ExtResource("5_arena")
+manager_path = NodePath("../DiceManager")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+[node name="Floor" type="StaticBody3D" parent="Box"]
+collision_layer = 1
+collision_mask = 3
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Box/Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+cast_shadow = 0
 mesh = SubResource("Mesh_floor")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
-shape = SubResource("Shape_floor")
+[node name="Border" type="MeshInstance3D" parent="Box/Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_floor_border")
+surface_material_override/0 = ExtResource("6_outline")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Box/Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 0)
+shape = SubResource("Shape_box")
+
+[node name="OtherBoxSides" type="Node3D" parent="Box"]
+
+[node name="Roof" type="StaticBody3D" parent="Box/OtherBoxSides"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+collision_layer = 1
+input_ray_pickable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Box/OtherBoxSides/Roof"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+shape = SubResource("Shape_box")
+
+[node name="Wall-z" parent="Box/OtherBoxSides" instance=ExtResource("4_wall")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, -25)
+
+[node name="Wall+z" parent="Box/OtherBoxSides" instance=ExtResource("4_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 25)
+
+[node name="Wall-x" parent="Box/OtherBoxSides" instance=ExtResource("4_wall")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 25, 0, 0)
+
+[node name="Wall+x" parent="Box/OtherBoxSides" instance=ExtResource("4_wall")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, -25, 0, 0)
+
+[node name="ResizeTicks" type="Timer" parent="Box"]
+wait_time = 0.15
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.403317, 0.888258, -0.219846, -0.492404, 0.413176, 0.766044, 0.771281, -0.200706, 0.604023, 0, 5, 0)
@@ -43,12 +90,16 @@ transform = Transform3D(0.403317, 0.888258, -0.219846, -0.492404, 0.413176, 0.76
 transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 7, 2.7)
 current = true
 
+[node name="ZoomTicks" type="Timer" parent="Camera3D"]
+wait_time = 0.15
+
 [node name="DiceManager" type="Node3D" parent="."]
 script = ExtResource("2_manager")
-floor_collision = NodePath("../Floor/CollisionShape3D")
+floor_collision = NodePath("../Box/Floor/CollisionShape3D")
 
 [node name="DiceInteractions" type="Node3D" parent="."]
 script = ExtResource("3_interact")
+other_box_sides_path = NodePath("../Box/OtherBoxSides")
 
 [node name="RotateTicks" type="Timer" parent="DiceInteractions"]
 wait_time = 0.2
@@ -84,6 +135,6 @@ shape = SubResource("Sphere_grab")
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 900.0
-offset_bottom = 120.0
+offset_bottom = 140.0
 theme_override_font_sizes/font_size = 22
 text = "Space: spawn d6"

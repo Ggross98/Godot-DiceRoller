@@ -13,6 +13,9 @@ public partial class DiceInteractionController : Node3D
     const float MinDraggingHeight = 1f;
     const float RotateStep = Mathf.Pi / 32f;
 
+    [Export]
+    public NodePath? OtherBoxSidesPath { get; set; }
+
     Vector3 _mousePosition;
     DieBody? _hoveredDie;
     float _draggingHeight = MinDraggingHeight;
@@ -34,6 +37,7 @@ public partial class DiceInteractionController : Node3D
             DebugShapeThickness = 0,
         };
         AddChild(_mouseRay);
+        AddWallExceptions();
 
         _rotateTicks = GetNode<Timer>("RotateTicks");
         _rotateTicks.Timeout += OnRotateTicksTimeout;
@@ -395,4 +399,19 @@ public partial class DiceInteractionController : Node3D
 
     float GrabRadius() =>
         _grabShape.Shape is SphereShape3D sphere ? sphere.Radius : 8f;
+
+    void AddWallExceptions()
+    {
+        var sides = OtherBoxSidesPath is not null
+            ? GetNodeOrNull<Node3D>(OtherBoxSidesPath)
+            : GetNodeOrNull<Node3D>("../Box/OtherBoxSides");
+        if (sides is null)
+            return;
+
+        foreach (var child in sides.GetChildren())
+        {
+            if (child is CollisionObject3D body)
+                _mouseRay.AddException(body);
+        }
+    }
 }

@@ -12,6 +12,8 @@ public partial class SettingsStore : Node
     {
         ["gravity"] = 4f,
         ["allow_locked_move"] = false,
+        ["invert_scroll"] = false,
+        ["invert_resize"] = false,
     };
 
     public event Action<string, object>? Changed;
