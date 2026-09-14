@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://dice/materials/outline.gdshader" id="1"]
+
+[resource]
+shader = ExtResource("1")
+shader_parameter/enabled = true
+shader_parameter/border_width = 0.1
+shader_parameter/border_color = Color(1, 0.768627, 0.564706, 1)

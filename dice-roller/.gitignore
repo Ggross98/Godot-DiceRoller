@@ -1,6 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+*.import
 
 # Design-time / CLI intermediates (Godot still outputs assemblies under .godot/)
 [Bb]in/

@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://ddngkjgqoamti"]
 
 [ext_resource type="Script" uid="uid://c8k2dice0tableapp" path="res://scripts/DiceTableApp.cs" id="1_app"]
+[ext_resource type="PackedScene" path="res://dice/d6.tscn" id="2_d6"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.329412, 0.305882, 0.407843, 1)
@@ -31,3 +32,6 @@ transform = Transform3D(0.403317, 0.888258, -0.219846, -0.492404, 0.413176, 0.76
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 7, 2.7)
 current = true
+
+[node name="d6" parent="." instance=ExtResource("2_d6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
