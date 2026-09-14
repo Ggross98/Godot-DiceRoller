@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://ddngkjgqoamti"]
+
+[ext_resource type="Script" uid="uid://c8k2dice0tableapp" path="res://scripts/DiceTableApp.cs" id="1_app"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.329412, 0.305882, 0.407843, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_floor"]
+material = SubResource("Mat_floor")
+size = Vector3(10, 0.2, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_floor"]
+size = Vector3(10, 0.2, 10)
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_app")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+collision_layer = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("Mesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("Shape_floor")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.403317, 0.888258, -0.219846, -0.492404, 0.413176, 0.766044, 0.771281, -0.200706, 0.604023, 0, 5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 7, 2.7)
+current = true
