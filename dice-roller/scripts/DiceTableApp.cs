@@ -25,6 +25,7 @@ public partial class DiceTableApp : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        // Mouse hover/drag/lock belongs to DiceInteractionController; do not consume pointer events here.
         if (@event.IsActionPressed("roll"))
         {
             _manager.SpawnStandard(HullKind.D6);

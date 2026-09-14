@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c8k2dice0tableapp" path="res://scripts/DiceTableApp.cs" id="1_app"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceManager.cs" id="2_manager"]
+[ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceInteractionController.cs" id="3_interact"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.329412, 0.305882, 0.407843, 1)
@@ -36,6 +37,12 @@ current = true
 [node name="DiceManager" type="Node3D" parent="."]
 script = ExtResource("2_manager")
 floor_collision = NodePath("../Floor/CollisionShape3D")
+
+[node name="DiceInteractions" type="Node3D" parent="."]
+script = ExtResource("3_interact")
+
+[node name="RotateTicks" type="Timer" parent="DiceInteractions"]
+wait_time = 0.2
 
 [node name="Hud" type="CanvasLayer" parent="."]
 

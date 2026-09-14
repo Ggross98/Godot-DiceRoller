@@ -22,6 +22,10 @@ public partial class DieBody : RigidBody3D
 
     public bool Locked { get; private set; }
 
+    public InteractionState Interaction { get; set; }
+
+    public DieFaceMap FaceMap => _map;
+
     public event Action<RollOutcome>? Rolled;
 
     public event Action<DieBody>? Died;
@@ -34,6 +38,7 @@ public partial class DieBody : RigidBody3D
     MeshInstance3D? _mesh;
     MeshInstance3D? _border;
     Material? _lockedMaterial;
+    readonly MeshDataTool _meshTool = new();
     float _pollTime;
     bool _configured;
     bool _despawning;
@@ -54,9 +59,12 @@ public partial class DieBody : RigidBody3D
 
     public override void _Ready()
     {
+        InputRayPickable = true;
         _mesh = GetNode<MeshInstance3D>("Mesh");
         _border = GetNode<MeshInstance3D>("Mesh/Border");
         _lockedMaterial = GD.Load<Material>("res://dice/materials/BodyLocked.material");
+        if (_border.Mesh is ArrayMesh arrayMesh)
+            _meshTool.CreateFromSurface(arrayMesh, 0);
 
         if (!_configured)
         {
@@ -133,6 +141,21 @@ public partial class DieBody : RigidBody3D
             AxisLockAngularZ = false;
             Sleeping = false;
         }
+    }
+
+    public float GetOriginToLowestYHeight()
+    {
+        float originY = ToGlobal(Vector3.Zero).Y;
+        float lowestY = originY;
+        int count = _meshTool.GetVertexCount();
+        for (int i = 0; i < count; i++)
+        {
+            float vertexY = ToGlobal(_meshTool.GetVertex(i)).Y;
+            if (vertexY < lowestY)
+                lowestY = vertexY;
+        }
+
+        return originY - lowestY;
     }
 
     public void Die()
