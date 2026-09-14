@@ -36,4 +36,33 @@ public class FaceLayoutTests
         Assert.Equal("6", original[new FaceSlotId(6)].Id);
         Assert.Equal("sword", clone[new FaceSlotId(6)].Id);
     }
+
+    [Fact]
+    public void Replace_raises_Changed()
+    {
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+        var raised = 0;
+        layout.Changed += () => raised++;
+
+        layout.Replace(new FaceSlotId(6), new FaceContent { Id = "sword", Label = "Sword" });
+
+        Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public void Clone_does_not_copy_Changed_subscribers()
+    {
+        var original = FaceLayouts.StandardNumeric(HullKind.D6);
+        var originalRaised = 0;
+        original.Changed += () => originalRaised++;
+
+        var clone = original.Clone();
+        var cloneRaised = 0;
+        clone.Changed += () => cloneRaised++;
+
+        clone.Replace(new FaceSlotId(6), new FaceContent { Id = "sword", Label = "Sword" });
+
+        Assert.Equal(0, originalRaised);
+        Assert.Equal(1, cloneRaised);
+    }
 }

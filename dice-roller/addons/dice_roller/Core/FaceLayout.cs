@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace DiceRoller.Core;
 
 public sealed class FaceLayout
@@ -24,6 +26,8 @@ public sealed class FaceLayout
         }
     }
 
+    public event Action? Changed;
+
     public void Replace(FaceSlotId slot, FaceContent content)
     {
         if (slot == FaceSlotId.None)
@@ -32,6 +36,7 @@ public sealed class FaceLayout
             throw new KeyNotFoundException($"FaceLayout has no slot {slot.Value} to replace.");
         ArgumentNullException.ThrowIfNull(content);
         _slots[slot] = content;
+        Changed?.Invoke();
     }
 
     public FaceLayout Clone() => new(_slots);

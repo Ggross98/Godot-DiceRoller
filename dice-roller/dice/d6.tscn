@@ -3,6 +3,7 @@
 [ext_resource type="Material" path="res://dice/materials/Body.material" id="1"]
 [ext_resource type="Material" path="res://dice/materials/Numbers.material" id="2"]
 [ext_resource type="Material" path="res://dice/materials/outline.tres" id="3_outline"]
+[ext_resource type="Script" path="res://addons/dice_roller/Physics/DieBody.cs" id="die_body"]
 
 [sub_resource type="PhysicsMaterial" id="1"]
 friction = 0.95
@@ -48,6 +49,8 @@ _surfaces = [{
 size = Vector3(1.16, 1.16, 1.16)
 
 [node name="d6" type="RigidBody3D" unique_id=2041748735]
+script = ExtResource("die_body")
+Hull = 1
 collision_layer = 2
 collision_mask = 3
 mass = 3.0
