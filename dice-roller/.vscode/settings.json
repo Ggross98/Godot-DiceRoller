@@ -1,0 +1,11 @@
+{
+  "dotnet.defaultSolution": "DiceRoller.sln",
+  "dotnet.projects.enableAutomaticRestore": true,
+  "omnisharp.useModernNet": true,
+  "omnisharp.sdkIncludePrereleases": false,
+  "omnisharp.enableMsBuildLoadProjectsOnDemand": false,
+  "omnisharp.projectLoadTimeout": 120,
+  "[csharp]": {
+    "editor.defaultFormatter": "anysphere.csharp"
+  }
+}

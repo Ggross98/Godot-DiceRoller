@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Godot.NET.Sdk otherwise redirects restore/design-time output to
+      .godot/mono/temp/obj. Cursor's C# language server looks for
+      obj/project.assets.json next to the csproj, then reports CS0246
+      for Node2D / the Godot namespace even though dotnet build succeeds.
+      Compiled assemblies still go to .godot/mono/temp/bin (set by the SDK).
+    -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+</Project>
