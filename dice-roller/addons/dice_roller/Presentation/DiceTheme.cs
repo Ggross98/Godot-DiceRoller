@@ -1,3 +1,4 @@
+using DiceRoller.Physics;
 using DiceRoller.Settings;
 using Godot;
 
@@ -11,14 +12,14 @@ public static class DiceTheme
     {
         ApplyHtml(settings, "body_color", color =>
         {
-            SetAlbedo("res://dice/materials/Body.material", color);
-            SetAlbedo("res://dice/materials/BodyLocked.material", color);
+            SetAlbedo(DiceAssets.BodyMaterial, color);
+            SetAlbedo(DiceAssets.BodyLockedMaterial, color);
         });
         ApplyHtml(settings, "number_color", color =>
-            SetAlbedo("res://dice/materials/Numbers.material", color));
+            SetAlbedo(DiceAssets.NumbersMaterial, color));
         ApplyHtml(settings, "border_color", color =>
         {
-            if (GD.Load<Material>("res://dice/materials/outline.tres") is ShaderMaterial outline)
+            if (GD.Load<Material>(DiceAssets.OutlineMaterial) is ShaderMaterial outline)
                 outline.SetShaderParameter("border_color", color);
         });
     }

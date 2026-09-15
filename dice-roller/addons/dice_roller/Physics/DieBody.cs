@@ -62,7 +62,7 @@ public partial class DieBody : RigidBody3D
         InputRayPickable = true;
         _mesh = GetNode<MeshInstance3D>("Mesh");
         _border = GetNode<MeshInstance3D>("Mesh/Border");
-        _lockedMaterial = GD.Load<Material>("res://dice/materials/BodyLocked.material");
+        _lockedMaterial = GD.Load<Material>(DiceAssets.BodyLockedMaterial);
         if (_border.Mesh is ArrayMesh arrayMesh)
             _meshTool.CreateFromSurface(arrayMesh, 0);
 

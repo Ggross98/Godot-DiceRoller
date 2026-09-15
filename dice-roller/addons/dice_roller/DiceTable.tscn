@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceTable.cs" id="1_table"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceManager.cs" id="2_manager"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DiceInteractionController.cs" id="3_interact"]
-[ext_resource type="PackedScene" uid="uid://cwall0dicebox01" path="res://World/wall.tscn" id="4_wall"]
+[ext_resource type="PackedScene" uid="uid://cwall0dicebox01" path="res://addons/dice_roller/assets/world/wall.tscn" id="4_wall"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/ArenaController.cs" id="5_arena"]
-[ext_resource type="Material" path="res://dice/materials/outline.tres" id="6_outline"]
+[ext_resource type="Material" path="res://addons/dice_roller/assets/dice/materials/outline.tres" id="6_outline"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 shading_mode = 2

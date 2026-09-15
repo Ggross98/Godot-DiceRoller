@@ -15,16 +15,6 @@ public partial class DiceManager : Node3D, IDiceTable
 {
     static readonly IFacePresenter DefaultPresenter = new BakedNumeralPresenter();
 
-    static readonly Dictionary<HullKind, string> ScenePaths = new()
-    {
-        [HullKind.D4] = "res://dice/d4.tscn",
-        [HullKind.D6] = "res://dice/d6.tscn",
-        [HullKind.D8] = "res://dice/d8.tscn",
-        [HullKind.D10] = "res://dice/d10.tscn",
-        [HullKind.D12] = "res://dice/d12.tscn",
-        [HullKind.D20] = "res://dice/d20.tscn",
-    };
-
     [Export]
     public CollisionShape3D? FloorCollision { get; set; }
 
@@ -78,7 +68,7 @@ public partial class DiceManager : Node3D, IDiceTable
     public DieBody Spawn(DieDefinition definition)
     {
         var spawn = definition.CloneForSpawn();
-        var scene = GD.Load<PackedScene>(ScenePaths[spawn.Hull]);
+        var scene = GD.Load<PackedScene>(DiceAssets.DieScene(spawn.Hull));
         var die = scene.Instantiate<DieBody>();
         die.Configure(spawn, DefaultPresenter, _settings);
         AddChild(die);

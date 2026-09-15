@@ -1,8 +1,8 @@
 [gd_scene format=4]
 
-[ext_resource type="Material" path="res://dice/materials/Body.material" id="1"]
-[ext_resource type="Material" path="res://dice/materials/Numbers.material" id="4"]
-[ext_resource type="Material" path="res://dice/materials/outline.tres" id="3_outline"]
+[ext_resource type="Material" path="res://addons/dice_roller/assets/dice/materials/Body.material" id="1"]
+[ext_resource type="Material" path="res://addons/dice_roller/assets/dice/materials/Numbers.material" id="4"]
+[ext_resource type="Material" path="res://addons/dice_roller/assets/dice/materials/outline.tres" id="3_outline"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/DieBody.cs" id="die_body"]
 
 [sub_resource type="PhysicsMaterial" id="1"]
