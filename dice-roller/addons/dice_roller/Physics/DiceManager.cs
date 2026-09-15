@@ -11,7 +11,7 @@ using Godot;
 namespace DiceRoller.Physics;
 
 [GlobalClass]
-public partial class DiceManager : Node3D
+public partial class DiceManager : Node3D, IDiceTable
 {
     static readonly IFacePresenter DefaultPresenter = new BakedNumeralPresenter();
 
@@ -33,7 +33,20 @@ public partial class DiceManager : Node3D
 
     public DieBody? LastSpawned { get; private set; }
 
+    public int Count
+    {
+        get
+        {
+            int n = 0;
+            foreach (var _ in Dice())
+                n++;
+            return n;
+        }
+    }
+
     public event Action<DieBody>? Spawned;
+
+    public event Action<RollOutcome>? Rolled;
 
     SettingsStore? _settings;
     DiceSession? _session;
@@ -59,6 +72,8 @@ public partial class DiceManager : Node3D
             Hull = hull,
             Layout = FaceLayouts.StandardNumeric(hull),
         });
+
+    public DieBody SpawnStandard(string hullKind) => SpawnStandard(HullKinds.Parse(hullKind));
 
     public DieBody Spawn(DieDefinition definition)
     {
@@ -180,7 +195,11 @@ public partial class DiceManager : Node3D
         die.Sleeping = false;
     }
 
-    void OnDieRolled(RollOutcome outcome) => _session?.Record(outcome);
+    void OnDieRolled(RollOutcome outcome)
+    {
+        _session?.Record(outcome);
+        Rolled?.Invoke(outcome);
+    }
 
     void OnDieDied(DieBody die)
     {
