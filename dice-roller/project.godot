@@ -31,6 +31,10 @@ window/stretch/aspect="expand"
 
 project/assembly_name="DiceRoller"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/dice_roller/plugin.cfg")
+
 [input]
 
 add_die={
