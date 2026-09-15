@@ -1,5 +1,6 @@
 using DiceRoller.Core;
 using DiceRoller.Physics;
+using DiceRoller.Presentation;
 using DiceRoller.Session;
 using DiceRoller.Settings;
 using Godot;
@@ -16,6 +17,7 @@ public partial class DiceTableApp : Node3D
     Timer _resizeTicks = null!;
     Timer _zoomTicks = null!;
     SettingsStore _settings = null!;
+    DiceSession _session = null!;
     Label _outcomeLabel = null!;
     RollOutcome? _lastOutcome;
     bool _sizeUp;
@@ -32,9 +34,11 @@ public partial class DiceTableApp : Node3D
         _outcomeLabel = GetNode<Label>("Hud/OutcomeLabel");
         _resizeTicks.Timeout += OnResizeTicksTimeout;
         _zoomTicks.Timeout += OnZoomTicksTimeout;
-        var session = GetNode<DiceSession>("/root/DiceSession");
-        session.Recorded += OnRecorded;
+        _session = GetNode<DiceSession>("/root/DiceSession");
+        _session.Recorded += OnRecorded;
+        _settings.Changed += OnSettingChanged;
         _manager.Spawned += _ => RefreshHud();
+        DiceTheme.Apply(_settings);
         RefreshHud();
     }
 
@@ -101,6 +105,21 @@ public partial class DiceTableApp : Node3D
             else if (key.Keycode == Key.F3)
             {
                 DropLastDie();
+                GetViewport().SetInputAsHandled();
+            }
+            else if (key.Keycode == Key.F4)
+            {
+                _settings.Set("body_color", "#e040a0");
+                GetViewport().SetInputAsHandled();
+            }
+            else if (key.Keycode == Key.Bracketleft)
+            {
+                NudgeGravity(-0.5f);
+                GetViewport().SetInputAsHandled();
+            }
+            else if (key.Keycode == Key.Bracketright)
+            {
+                NudgeGravity(0.5f);
                 GetViewport().SetInputAsHandled();
             }
         }
@@ -195,6 +214,7 @@ public partial class DiceTableApp : Node3D
         if (die is null)
             return;
         die.Layout.Replace(new FaceSlotId(6), new FaceContent { Id = "sword", Label = "Sword" });
+        die.PollNow();
         RefreshHud();
     }
 
@@ -230,6 +250,19 @@ public partial class DiceTableApp : Node3D
             }
         }
 
-        _outcomeLabel.Text = $"{outcomeLine}\nlayout[6]={layout6}\nWheel: zoom  Shift+wheel: arena";
+        _outcomeLabel.Text =
+            $"{outcomeLine}\ncount={_session.Count}  sum={NumericScore.Sum(_session.Outcomes)}  sword={_session.CountByContentId("sword")}\nlayout[6]={layout6}\nWheel: zoom  Shift+wheel: arena";
+    }
+
+    void OnSettingChanged(string key, object _)
+    {
+        if (key.Contains("color"))
+            DiceTheme.Apply(_settings);
+    }
+
+    void NudgeGravity(float delta)
+    {
+        float gravity = Mathf.Clamp(_settings.Get("gravity", 4f) + delta, 0.5f, 10f);
+        _settings.Set("gravity", gravity);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DiceRoller.Core;
 using Godot;
 
@@ -13,6 +14,10 @@ public partial class DiceSession : Node
     public event Action<RollOutcome>? Recorded;
 
     public int Count => State.Count;
+
+    public IEnumerable<RollOutcome> Outcomes => State.Outcomes;
+
+    public int CountByContentId(string id) => State.CountByContentId(id);
 
     public void Record(RollOutcome outcome)
     {

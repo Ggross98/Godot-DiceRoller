@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://citkbi1c5pvll"]
 
-[ext_resource type="Script" path="res://scripts/Example.cs" id="1_o34ws"]
+[ext_resource type="Script" uid="uid://cuf218gqbm7th" path="res://scripts/DiceTableApp.cs" id="1_o34ws"]
 
 [node name="Example" type="Node2D" unique_id=722490395]
 script = ExtResource("1_o34ws")

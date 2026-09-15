@@ -49,4 +49,26 @@ public class DiceSessionStateTests
         Assert.False(session.TryGet(11, out _));
         Assert.True(session.TryGet(22, out _));
     }
+
+    [Fact]
+    public void CountByContentId_counts_valid_matches_only()
+    {
+        var session = new DiceSessionState();
+        session.Record(Outcome(11, "sword"));
+        session.Record(Outcome(22, "6"));
+        session.Record(Outcome(33, "sword", valid: false));
+
+        Assert.Equal(1, session.CountByContentId("sword"));
+    }
+
+    [Fact]
+    public void CountByContentId_is_zero_after_forget()
+    {
+        var session = new DiceSessionState();
+        session.Record(Outcome(11, "sword"));
+        session.Forget(11);
+
+        Assert.Equal(0, session.CountByContentId("sword"));
+        Assert.Empty(session.Outcomes);
+    }
 }
