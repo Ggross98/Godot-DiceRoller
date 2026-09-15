@@ -1,5 +1,6 @@
 using DiceRoller.Core;
 using DiceRoller.Physics;
+using DiceRoller.Presentation;
 using Godot;
 
 #nullable enable
@@ -18,9 +19,17 @@ public partial class HeadlessTableApp : Node3D
         _label = GetNode<Label>("Hud/Status");
         _table.Rolled += OnRolled;
 
-        _die = _table.SpawnStandard("d6");
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
         var slot6 = new FaceSlotId(6);
-        _die.Layout.Replace(slot6, new FaceContent { Id = "sword", Label = "Sword" });
+        layout.Replace(slot6, new FaceContent
+        {
+            Id = "sword",
+            Label = "Sword",
+            TextureKey = DiceAssets.ExampleFace,
+        });
+        _die = _table.Spawn(
+            new DieDefinition { Hull = HullKind.D6, Layout = layout },
+            new ImageFacePresenter());
         _layoutId = _die.Layout[slot6].Id;
         _die.PollNow();
         Refresh();

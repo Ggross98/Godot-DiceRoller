@@ -46,15 +46,14 @@ public partial class DieBody : RigidBody3D
 
     public void Configure(DieDefinition definition, IFacePresenter presenter, SettingsStore? settings)
     {
+        UnhookLayout();
         Hull = definition.Hull;
         Layout = definition.Layout;
         _map = DieFaceMap.For(Hull);
-        _presenter = presenter;
         _settings = settings;
         _configured = true;
+        SetPresenter(presenter);
         HookLayout();
-        if (IsNodeReady())
-            _presenter.Apply(Layout);
     }
 
     public override void _Ready()
@@ -75,15 +74,14 @@ public partial class DieBody : RigidBody3D
         }
         else
         {
-            _presenter.Apply(Layout);
+            BindPresenter();
         }
     }
 
     public override void _ExitTree()
     {
-        if (_layoutHooked)
-            Layout.Changed -= OnLayoutChanged;
-        _layoutHooked = false;
+        UnhookLayout();
+        _presenter.Unbind();
     }
 
     public override void _Process(double delta)
@@ -200,13 +198,35 @@ public partial class DieBody : RigidBody3D
             _mesh.Scale = invalid ? ShrunkMesh : Vector3.One;
     }
 
+    void SetPresenter(IFacePresenter presenter)
+    {
+        if (_mesh is not null)
+            _presenter.Unbind();
+        _presenter = presenter;
+        BindPresenter();
+    }
+
+    void BindPresenter()
+    {
+        if (_mesh is null)
+            return;
+        _presenter.Bind(_mesh, _map);
+        _presenter.Apply(Layout);
+    }
+
     void HookLayout()
     {
-        if (_layoutHooked)
-            Layout.Changed -= OnLayoutChanged;
+        UnhookLayout();
         Layout.Changed += OnLayoutChanged;
         _layoutHooked = true;
         _presenter.Apply(Layout);
+    }
+
+    void UnhookLayout()
+    {
+        if (_layoutHooked)
+            Layout.Changed -= OnLayoutChanged;
+        _layoutHooked = false;
     }
 
     void OnLayoutChanged() => _presenter.Apply(Layout);

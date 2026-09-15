@@ -36,6 +36,7 @@ public partial class DiceTableApp : Node3D
         session.Recorded += OnRecorded;
         _settings.Changed += OnSettingChanged;
         DiceTheme.Apply(_settings);
+        _manager.CreatePresenter = () => new ImageFacePresenter();
         RefreshHud();
     }
 
@@ -186,7 +187,12 @@ public partial class DiceTableApp : Node3D
         var die = _manager.LastSpawned;
         if (die is null)
             return;
-        die.Layout.Replace(new FaceSlotId(6), new FaceContent { Id = "sword", Label = "Sword" });
+        die.Layout.Replace(new FaceSlotId(6), new FaceContent
+        {
+            Id = "sword",
+            Label = "Sword",
+            TextureKey = DiceAssets.ExampleFace,
+        });
         die.PollNow();
         RefreshHud();
     }

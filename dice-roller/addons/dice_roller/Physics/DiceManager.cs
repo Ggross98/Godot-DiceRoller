@@ -13,7 +13,7 @@ namespace DiceRoller.Physics;
 [GlobalClass]
 public partial class DiceManager : Node3D, IDiceTable
 {
-    static readonly IFacePresenter DefaultPresenter = new BakedNumeralPresenter();
+    public Func<IFacePresenter> CreatePresenter { get; set; } = () => new BakedNumeralPresenter();
 
     [Export]
     public CollisionShape3D? FloorCollision { get; set; }
@@ -65,12 +65,15 @@ public partial class DiceManager : Node3D, IDiceTable
 
     public DieBody SpawnStandard(string hullKind) => SpawnStandard(HullKinds.Parse(hullKind));
 
-    public DieBody Spawn(DieDefinition definition)
+    public DieBody Spawn(DieDefinition definition) => Spawn(definition, CreatePresenter());
+
+    public DieBody Spawn(DieDefinition definition, IFacePresenter presenter)
     {
+        ArgumentNullException.ThrowIfNull(presenter);
         var spawn = definition.CloneForSpawn();
         var scene = GD.Load<PackedScene>(DiceAssets.DieScene(spawn.Hull));
         var die = scene.Instantiate<DieBody>();
-        die.Configure(spawn, DefaultPresenter, _settings);
+        die.Configure(spawn, presenter, _settings);
         AddChild(die);
         die.GravityScale = _settings?.Get("gravity", 4f) ?? 4f;
         die.Rolled += OnDieRolled;

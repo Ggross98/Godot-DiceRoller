@@ -1,5 +1,6 @@
 using System;
 using DiceRoller.Core;
+using DiceRoller.Presentation;
 using Godot;
 
 #nullable enable
@@ -22,6 +23,9 @@ public partial class DiceTable : Node3D, IDiceTable
     public event Action<RollOutcome>? Rolled;
 
     public DieBody Spawn(DieDefinition definition) => _manager.Spawn(definition);
+
+    public DieBody Spawn(DieDefinition definition, IFacePresenter presenter) =>
+        _manager.Spawn(definition, presenter);
 
     public DieBody SpawnStandard(HullKind hull) => _manager.SpawnStandard(hull);
 

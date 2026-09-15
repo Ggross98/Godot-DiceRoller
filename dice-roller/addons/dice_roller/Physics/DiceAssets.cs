@@ -8,6 +8,8 @@ public static class DiceAssets
 {
     public const string Root = "res://addons/dice_roller/assets/";
     public const string DiceDir = Root + "dice/";
+    public const string FacesDir = Root + "faces/";
+    public const string ExampleFace = FacesDir + "example.png";
     public const string WallScene = Root + "world/wall.tscn";
     public const string BodyMaterial = DiceDir + "materials/Body.material";
     public const string BodyLockedMaterial = DiceDir + "materials/BodyLocked.tres";
