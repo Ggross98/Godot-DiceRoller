@@ -9,15 +9,13 @@ using Godot;
 
 public partial class DiceTableApp : Node3D
 {
-    // Phase 3: the `roll` action (Space / R) spawns a standard numeric d6.
-    // Phase 6/7 will switch Space back to RollAll.
+    // Roll / lock / clear / add-die live on DiceHud so Space is RollAll, not spawn.
     DiceManager _manager = null!;
     ArenaController _arena = null!;
     Camera3D _camera = null!;
     Timer _resizeTicks = null!;
     Timer _zoomTicks = null!;
     SettingsStore _settings = null!;
-    DiceSession _session = null!;
     Label _outcomeLabel = null!;
     RollOutcome? _lastOutcome;
     bool _sizeUp;
@@ -34,10 +32,9 @@ public partial class DiceTableApp : Node3D
         _outcomeLabel = GetNode<Label>("Hud/OutcomeLabel");
         _resizeTicks.Timeout += OnResizeTicksTimeout;
         _zoomTicks.Timeout += OnZoomTicksTimeout;
-        _session = GetNode<DiceSession>("/root/DiceSession");
-        _session.Recorded += OnRecorded;
+        var session = GetNode<DiceSession>("/root/DiceSession");
+        session.Recorded += OnRecorded;
         _settings.Changed += OnSettingChanged;
-        _manager.Spawned += _ => RefreshHud();
         DiceTheme.Apply(_settings);
         RefreshHud();
     }
@@ -45,30 +42,6 @@ public partial class DiceTableApp : Node3D
     public override void _UnhandledInput(InputEvent @event)
     {
         HandleZoomEvent(@event);
-
-        // LMB grab/lock belongs to DiceInteractionController; this node only uses the wheel for zoom/resize.
-        if (@event.IsActionPressed("roll"))
-        {
-            _manager.SpawnStandard(HullKind.D6);
-            GetViewport().SetInputAsHandled();
-            return;
-        }
-
-        if (@event.IsActionPressed("lock_dice"))
-        {
-            _manager.LockValid();
-            GetViewport().SetInputAsHandled();
-            return;
-        }
-
-        if (@event.IsActionPressed("clear"))
-        {
-            _manager.Clear();
-            _lastOutcome = null;
-            RefreshHud();
-            GetViewport().SetInputAsHandled();
-            return;
-        }
 
         if (@event.IsActionPressed("zoom_in"))
         {
@@ -229,29 +202,12 @@ public partial class DiceTableApp : Node3D
 
     void RefreshHud()
     {
-        string outcomeLine = "Space: spawn d6";
-        if (_lastOutcome is { } outcome)
-        {
-            outcomeLine = outcome.IsValid
-                ? $"{outcome.Hull}  slot={outcome.Slot.Value}  {outcome.Content.Label}"
-                : $"{outcome.Hull}  invalid  ?";
-        }
-
-        string layout6 = "-";
-        if (_manager.LastSpawned is { } die)
-        {
-            try
-            {
-                layout6 = die.Layout[new FaceSlotId(6)].Id;
-            }
-            catch (System.Exception)
-            {
-                layout6 = "n/a";
-            }
-        }
-
-        _outcomeLabel.Text =
-            $"{outcomeLine}\ncount={_session.Count}  sum={NumericScore.Sum(_session.Outcomes)}  sword={_session.CountByContentId("sword")}\nlayout[6]={layout6}\nWheel: zoom  Shift+wheel: arena";
+        string last = _lastOutcome is { } outcome
+            ? outcome.IsValid
+                ? $"{outcome.Hull} {outcome.Content.Label}"
+                : $"{outcome.Hull} ?"
+            : "-";
+        _outcomeLabel.Text = $"F2 sword  F3 drop  F4 color  [ ] gravity  |  {last}";
     }
 
     void OnSettingChanged(string key, object _)

@@ -130,11 +130,20 @@ public partial class DiceManager : Node3D
         }
     }
 
-    public void Clear()
+    public void Clear() => RemoveDice(_ => true);
+
+    public void Clear(HullKind hull) => RemoveDice(die => die.Hull == hull);
+
+    void RemoveDice(Func<DieBody, bool> predicate)
     {
         foreach (var die in Dice())
-            die.Die();
-        LastSpawned = null;
+        {
+            if (predicate(die))
+                die.Die();
+        }
+
+        if (LastSpawned is { } last && last.IsQueuedForDeletion())
+            LastSpawned = null;
     }
 
     public void WakeAll()

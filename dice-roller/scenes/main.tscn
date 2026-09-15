@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cwall0dicebox01" path="res://World/wall.tscn" id="4_wall"]
 [ext_resource type="Script" path="res://addons/dice_roller/Physics/ArenaController.cs" id="5_arena"]
 [ext_resource type="Material" path="res://dice/materials/outline.tres" id="6_outline"]
+[ext_resource type="PackedScene" path="res://addons/dice_roller/Ui/DiceHud.tscn" id="7_hud"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 shading_mode = 2
@@ -130,11 +131,18 @@ angular_damp = 20.0
 shape = SubResource("Sphere_grab")
 
 [node name="Hud" type="CanvasLayer" parent="."]
+layer = 2
 
 [node name="OutcomeLabel" type="Label" parent="Hud"]
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 900.0
-offset_bottom = 140.0
-theme_override_font_sizes/font_size = 22
-text = "Space: spawn d6"
+offset_left = 300.0
+offset_top = 8.0
+offset_right = 1180.0
+offset_bottom = 36.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+text = "F2 sword  F3 drop  F4 color  [ ] gravity"
+
+[node name="DiceHud" parent="." instance=ExtResource("7_hud")]
+manager = NodePath("../DiceManager")
+arena = NodePath("../Box")
+camera = NodePath("../Camera3D")
