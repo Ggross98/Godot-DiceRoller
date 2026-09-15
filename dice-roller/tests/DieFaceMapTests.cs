@@ -17,6 +17,17 @@ public class DieFaceMapTests
     }
 
     [Fact]
+    public void Identity_d6_translated_below_origin_still_reads_slot_6()
+    {
+        var map = DieFaceMap.For(HullKind.D6);
+        var xf = new Transform3D(Basis.Identity, new Vector3(0f, -5f, 0f));
+        var result = map.ReadUpSlot(xf);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(6, result.Slot.Value);
+    }
+
+    [Fact]
     public void D6_tilted_45_degrees_around_x_is_invalid()
     {
         var map = DieFaceMap.For(HullKind.D6);

@@ -47,4 +47,18 @@ public class FaceReaderTests
         Assert.Equal(FaceSlotId.None, outcome.Slot);
         Assert.Same(FaceContent.None, outcome.Content);
     }
+
+    [Fact]
+    public void Upright_d6_below_world_origin_still_reads_numeric_six()
+    {
+        var map = DieFaceMap.For(HullKind.D6);
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+        var xf = new Transform3D(Basis.Identity, new Vector3(0f, -5f, 0f));
+
+        var outcome = FaceReader.Read(map, layout, xf);
+
+        Assert.True(outcome.IsValid);
+        Assert.Equal(6, outcome.Slot.Value);
+        Assert.Equal(6, outcome.Content.NumericValue);
+    }
 }

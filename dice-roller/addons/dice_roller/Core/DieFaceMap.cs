@@ -34,7 +34,7 @@ public sealed class DieFaceMap
 
     public UpSlotResult ReadUpSlot(Transform3D transform)
     {
-        float highestY = 0f;
+        float highestY = float.NegativeInfinity;
         var highest = FaceSlotId.None;
         var heights = new List<float>(Samples.Count);
         foreach (var (slot, local) in Samples)
