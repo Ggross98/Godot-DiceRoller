@@ -13,6 +13,6 @@
 ## Consequences
 
 - 第一期必须出现 `FaceSlotId`、`FaceContent`、`FaceLayout`、`RollOutcome` 类型，即使演示仍显示 1–20。
-- `IDiceTable.Sum` 不能作为唯一读取结果的方式；宿主应订阅 RollOutcome。
-- 自定义图片是 Presenter 适配器，不进入 Core；原版烘焙数字网格可以继续当默认 Presenter。
+- `NumericScore.Sum` 不能作为唯一读取结果的方式；宿主应订阅 RollOutcome。`IDiceTable` 没有 `Sum`。
+- 自定义图片是 Presenter 适配器，不进入 Core；默认 `BakedNumeralPresenter`，换图用 `ImageFacePresenter`（Decal）。
 - 原 GDScript 的 `sides: { 点数: Vector3 }` 在移植时拆成「采样点表」和「数字 FaceLayout」两份数据，采样向量保持原值。

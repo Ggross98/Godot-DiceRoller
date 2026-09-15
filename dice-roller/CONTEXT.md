@@ -33,7 +33,7 @@ _Avoid_: side, pip, rolled_side（当作唯一结果类型）
 _Avoid_: sides 字典（原 GDScript 把采样点与点数写在同一张表里）
 
 **DieDefinition**:
-生成一颗骰子所需的壳体种类、默认 FaceLayout，以及 Presenter 选择。
+生成一颗骰子所需的壳体种类与默认 FaceLayout。Presenter 在 `Spawn` / `CreatePresenter` 时注入，不进 Core。
 _Avoid_: 只用 `"d6"` 字符串表示「这颗骰子是什么」
 
 **RollOutcome**:
