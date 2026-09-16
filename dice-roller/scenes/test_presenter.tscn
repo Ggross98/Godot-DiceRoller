@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://bdqgmhuwgpiod"]
+
+[ext_resource type="Script" path="res://scripts/TestPresenterApp.cs" id="1_app"]
+[ext_resource type="PackedScene" path="res://addons/dice_roller/DiceTable.tscn" id="2_table"]
+
+[node name="TestPresenter" type="Node3D"]
+script = ExtResource("1_app")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.403317, 0.888258, -0.219846, -0.492404, 0.413176, 0.766044, 0.771281, -0.200706, 0.604023, 0, 5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 7, 2.7)
+current = true
+
+[node name="DiceTable" parent="." instance=ExtResource("2_table")]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Status" type="Label" parent="Hud"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 900.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "左键拖动，双击抛出"
