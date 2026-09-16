@@ -75,6 +75,7 @@ public partial class DieBody : RigidBody3D
         else
         {
             BindPresenter();
+            CallDeferred(MethodName.BindPresenter);
         }
     }
 

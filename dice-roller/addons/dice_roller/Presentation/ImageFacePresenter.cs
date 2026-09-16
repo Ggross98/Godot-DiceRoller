@@ -7,33 +7,35 @@ using Godot;
 namespace DiceRoller.Presentation;
 
 /// <summary>
-/// Overlays a Decal per slot whose <see cref="FaceContent.TextureKey"/> is a <c>res://</c> texture.
-/// Does not rewrite <see cref="DieFaceMap"/> or mesh UVs (baked numerals stay on the default glTF).
+/// Covers each textured slot with an opaque quad. Optional <see cref="HideBakedNumerals"/>
+/// drops the baked-numeral surface so pips cannot show around the image.
 /// </summary>
 public sealed class ImageFacePresenter : IFacePresenter
 {
-    const float ProjectionDepth = 0.16f;
-    const float OutwardBias = 0.03f;
-    const int NumeralsSurface = 1;
+    const float OutwardBias = 0.05f;
+    const int BodySurface = 0;
 
-    readonly Dictionary<FaceSlotId, Decal> _decals = new();
+    readonly Dictionary<FaceSlotId, MeshInstance3D> _faces = new();
     readonly Dictionary<string, Texture2D> _textures = new();
-    readonly StandardMaterial3D _hiddenNumerals = new()
-    {
-        Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-        AlbedoColor = new Color(0, 0, 0, 0),
-    };
+    readonly QuadMesh _quad = new();
+    readonly MeshDataTool _meshTool = new();
 
     MeshInstance3D? _mesh;
     DieFaceMap? _map;
-    bool _hidNumerals;
+    Mesh? _sourceMesh;
+    ArrayMesh? _bodyOnlyMesh;
 
     public bool HideBakedNumerals { get; set; }
 
     public void Bind(MeshInstance3D mesh, DieFaceMap map)
     {
+        if (_mesh is not null && _mesh != mesh)
+            RestoreSourceMesh();
+
         _mesh = mesh;
         _map = map;
+        if (HideBakedNumerals)
+            SetNumeralsHidden(true);
     }
 
     public void Apply(FaceLayout layout)
@@ -41,28 +43,30 @@ public sealed class ImageFacePresenter : IFacePresenter
         if (_mesh is null || _map is null)
             return;
 
-        bool anyTexture = false;
+        if (HideBakedNumerals)
+            SetNumeralsHidden(true);
+
+        float width = FaceWidth(_map.Hull, _mesh.GetAabb());
+        _quad.Size = new Vector2(width, width);
+
         foreach (var (slot, sample) in _map.Samples)
         {
             var content = layout[slot];
             if (string.IsNullOrEmpty(content.TextureKey))
             {
-                RemoveDecal(slot);
+                RemoveFace(slot);
                 continue;
             }
 
-            if (TryShow(slot, sample, content.TextureKey))
-                anyTexture = true;
+            TryShow(slot, sample, content.TextureKey);
         }
-
-        SetNumeralsHidden(HideBakedNumerals && anyTexture);
     }
 
     public void Unbind()
     {
-        foreach (var slot in new List<FaceSlotId>(_decals.Keys))
-            RemoveDecal(slot);
-        _decals.Clear();
+        foreach (var slot in new List<FaceSlotId>(_faces.Keys))
+            RemoveFace(slot);
+        _faces.Clear();
         SetNumeralsHidden(false);
         _mesh = null;
         _map = null;
@@ -73,59 +77,111 @@ public sealed class ImageFacePresenter : IFacePresenter
         if (!textureKey.StartsWith("res://"))
         {
             GD.PushWarning($"ImageFacePresenter: TextureKey must be a res:// path, got '{textureKey}'.");
-            RemoveDecal(slot);
+            RemoveFace(slot);
             return false;
         }
 
         var texture = LoadTexture(textureKey);
         if (texture is null)
         {
-            RemoveDecal(slot);
+            RemoveFace(slot);
             return false;
         }
 
-        var decal = GetOrCreateDecal(slot);
-        decal.TextureAlbedo = texture;
-        decal.Transform = PoseForSample(sample, _mesh!.GetAabb());
-        float width = FaceWidth(_map!.Hull, _mesh.GetAabb());
-        decal.Size = new Vector3(width, ProjectionDepth, width);
+        var face = GetOrCreateFace(slot);
+        if (face.MaterialOverride is not StandardMaterial3D material)
+        {
+            material = CreateFaceMaterial();
+            face.MaterialOverride = material;
+        }
+
+        material.AlbedoTexture = texture;
+        face.Transform = PoseForQuad(sample, _mesh!.GetAabb());
         return true;
     }
 
-    Decal GetOrCreateDecal(FaceSlotId slot)
+    MeshInstance3D GetOrCreateFace(FaceSlotId slot)
     {
-        if (_decals.TryGetValue(slot, out var existing) && GodotObject.IsInstanceValid(existing))
+        if (_faces.TryGetValue(slot, out var existing) && GodotObject.IsInstanceValid(existing))
             return existing;
 
-        var decal = new Decal
+        var face = new MeshInstance3D
         {
             Name = $"Face_{slot.Value}",
-            NormalFade = 0.5f,
-            UpperFade = 0.15f,
-            LowerFade = 0.15f,
+            Mesh = _quad,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            SortingOffset = 1f,
         };
-        _mesh!.AddChild(decal);
-        _decals[slot] = decal;
-        return decal;
+        _mesh!.AddChild(face);
+        _faces[slot] = face;
+        return face;
     }
 
-    void RemoveDecal(FaceSlotId slot)
+    void RemoveFace(FaceSlotId slot)
     {
-        if (!_decals.Remove(slot, out var decal))
+        if (!_faces.Remove(slot, out var face))
             return;
-        if (GodotObject.IsInstanceValid(decal))
-            decal.QueueFree();
+        if (GodotObject.IsInstanceValid(face))
+            face.QueueFree();
     }
 
     void SetNumeralsHidden(bool hide)
     {
-        if (_mesh is null || hide == _hidNumerals)
-            return;
-        _hidNumerals = hide;
-        if (_mesh.Mesh is null || _mesh.Mesh.GetSurfaceCount() <= NumeralsSurface)
-            return;
-        _mesh.SetSurfaceOverrideMaterial(NumeralsSurface, hide ? _hiddenNumerals : null);
+        if (hide)
+            StripNumeralsSurface();
+        else
+            RestoreSourceMesh();
     }
+
+    void StripNumeralsSurface()
+    {
+        if (_mesh?.Mesh is null)
+            return;
+        if (_bodyOnlyMesh is not null && _mesh.Mesh == _bodyOnlyMesh)
+            return;
+
+        _sourceMesh ??= _mesh.Mesh;
+        if (_sourceMesh is not ArrayMesh source)
+        {
+            GD.PushError($"ImageFacePresenter: cannot strip numerals from {_sourceMesh.GetType().Name}");
+            return;
+        }
+
+        if (source.GetSurfaceCount() <= BodySurface)
+            return;
+
+        Error err = _meshTool.CreateFromSurface(source, BodySurface);
+        if (err != Error.Ok)
+        {
+            GD.PushError($"ImageFacePresenter: CreateFromSurface failed ({err}).");
+            return;
+        }
+
+        var stripped = new ArrayMesh();
+        _meshTool.CommitToSurface(stripped);
+        var material = source.SurfaceGetMaterial(BodySurface);
+        if (material is not null)
+            stripped.SurfaceSetMaterial(0, material);
+
+        _bodyOnlyMesh = stripped;
+        _mesh.Mesh = stripped;
+    }
+
+    void RestoreSourceMesh()
+    {
+        if (_mesh is not null && _sourceMesh is not null)
+            _mesh.Mesh = _sourceMesh;
+        _bodyOnlyMesh = null;
+        _sourceMesh = null;
+    }
+
+    static StandardMaterial3D CreateFaceMaterial() => new()
+    {
+        ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        Transparency = BaseMaterial3D.TransparencyEnum.Disabled,
+        CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+        TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
+    };
 
     Texture2D? LoadTexture(string path)
     {
@@ -143,20 +199,20 @@ public sealed class ImageFacePresenter : IFacePresenter
         return texture;
     }
 
-    static Transform3D PoseForSample(Vector3 sample, Aabb aabb)
+    static Transform3D PoseForQuad(Vector3 sample, Aabb aabb)
     {
         var normal = sample.LengthSquared() < 1e-8f ? Vector3.Up : sample.Normalized();
-        float radius = aabb.Size.Length() > 0f ? aabb.GetLongestAxisSize() * 0.5f : 0.5f;
+        float radius = aabb.GetLongestAxisSize() * 0.5f;
         var origin = aabb.GetCenter() + normal * (radius + OutwardBias);
 
-        // Godot 4 Decal projects along local -Y, so +Y faces outward.
-        var y = normal;
+        // QuadMesh faces +Z, so +Z is outward.
+        var z = normal;
         var reference = Mathf.Abs(normal.Dot(Vector3.Up)) > 0.95f ? Vector3.Forward : Vector3.Up;
-        var x = reference.Cross(y);
+        var x = reference.Cross(z);
         if (x.LengthSquared() < 1e-8f)
             x = Vector3.Right;
         x = x.Normalized();
-        var z = x.Cross(y).Normalized();
+        var y = z.Cross(x).Normalized();
         return new Transform3D(new Basis(x, y, z), origin);
     }
 
@@ -165,13 +221,13 @@ public sealed class ImageFacePresenter : IFacePresenter
         float longest = aabb.GetLongestAxisSize();
         float factor = hull switch
         {
-            HullKind.D4 => 0.7f,
-            HullKind.D6 => 0.72f,
-            HullKind.D8 => 0.55f,
-            HullKind.D10 => 0.4f,
-            HullKind.D12 => 0.42f,
-            HullKind.D20 => 0.32f,
-            _ => 0.5f,
+            HullKind.D4 => 0.85f,
+            HullKind.D6 => 0.98f,
+            HullKind.D8 => 0.7f,
+            HullKind.D10 => 0.55f,
+            HullKind.D12 => 0.55f,
+            HullKind.D20 => 0.42f,
+            _ => 0.7f,
         };
         return longest * factor;
     }
