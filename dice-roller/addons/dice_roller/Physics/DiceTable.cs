@@ -20,6 +20,12 @@ public partial class DiceTable : Node3D, IDiceTable
 
     public int Count => _manager.Count;
 
+    public RollResolveMode ResolveMode
+    {
+        get => _manager.ResolveMode;
+        set => _manager.ResolveMode = value;
+    }
+
     public event Action<RollOutcome>? Rolled;
 
     public DieBody Spawn(DieDefinition definition) => _manager.Spawn(definition);

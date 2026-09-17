@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DiceRoller.Core;
 using DiceRoller.Presentation;
 using DiceRoller.Settings;
@@ -12,6 +13,11 @@ namespace DiceRoller.Physics;
 public partial class DieBody : RigidBody3D
 {
     static readonly Vector3 ShrunkMesh = new(0.9f, 0.9f, 0.9f);
+    const float ScriptedMinAirTime = 0.2f;
+    const float ScriptedTimeout = 2.5f;
+    const float ScriptedLinearSleep = 0.15f;
+    const float ScriptedAngularSleep = 0.4f;
+    const float ScriptedSnapHold = 0.08f;
 
     [Export]
     public HullKind Hull { get; set; } = HullKind.D6;
@@ -25,6 +31,8 @@ public partial class DieBody : RigidBody3D
     public InteractionState Interaction { get; set; }
 
     public DieFaceMap FaceMap => _map;
+
+    public FaceSlotId? ScriptedSlot => _scriptedSlot;
 
     public event Action<RollOutcome>? Rolled;
 
@@ -43,6 +51,11 @@ public partial class DieBody : RigidBody3D
     bool _configured;
     bool _despawning;
     bool _layoutHooked;
+    FaceSlotId? _scriptedSlot;
+    FaceSlotId _flightSlot;
+    bool _scriptedFlight;
+    float _scriptedElapsed;
+    float _snapHold;
 
     public void Configure(DieDefinition definition, IFacePresenter presenter, SettingsStore? settings)
     {
@@ -52,6 +65,8 @@ public partial class DieBody : RigidBody3D
         _map = DieFaceMap.For(Hull);
         _settings = settings;
         _configured = true;
+        ClearScriptedRoll();
+        CancelScriptedFlight();
         SetPresenter(presenter);
         HookLayout();
     }
@@ -90,11 +105,23 @@ public partial class DieBody : RigidBody3D
         if (_despawning)
             return;
 
-        _pollTime += (float)delta;
-        if (_pollTime > 1f)
+        if (_snapHold > 0f)
         {
-            _pollTime = 0f;
-            PollNow();
+            _snapHold -= (float)delta;
+            if (_snapHold <= 0f && !Locked)
+                Freeze = false;
+        }
+
+        if (_scriptedFlight)
+            TickScriptedFlight((float)delta);
+        else
+        {
+            _pollTime += (float)delta;
+            if (_pollTime > 1f)
+            {
+                _pollTime = 0f;
+                PollNow();
+            }
         }
 
         if (GlobalPosition.Y < -4f)
@@ -103,11 +130,41 @@ public partial class DieBody : RigidBody3D
 
     public RollOutcome PollNow()
     {
+        if (_scriptedFlight)
+            CompleteScriptedFlight();
+
         var outcome = FaceReader.Read(_map, Layout, GlobalTransform, GetInstanceId());
         SetInvalid(!outcome.IsValid);
         Rolled?.Invoke(outcome);
         return outcome;
     }
+
+    public void ScriptNextRoll(FaceSlotId slot)
+    {
+        _map.RequireSlot(slot);
+        _scriptedSlot = slot;
+    }
+
+    public void ScriptNextRollByContentId(string contentId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(contentId);
+        if (!Layout.TryGetSlotByContentId(contentId, out var slot))
+            throw new KeyNotFoundException($"FaceLayout has no content id '{contentId}'.");
+        ScriptNextRoll(slot);
+    }
+
+    public void ClearScriptedRoll() => _scriptedSlot = null;
+
+    public void BeginScriptedFlight(FaceSlotId slot)
+    {
+        _map.RequireSlot(slot);
+        _flightSlot = slot;
+        _scriptedFlight = true;
+        _scriptedElapsed = 0f;
+        _pollTime = 0f;
+    }
+
+    public void CancelScriptedFlight() => _scriptedFlight = false;
 
     public void SetLocked(bool locked)
     {
@@ -231,4 +288,43 @@ public partial class DieBody : RigidBody3D
     }
 
     void OnLayoutChanged() => _presenter.Apply(Layout);
+
+    void TickScriptedFlight(float delta)
+    {
+        if (Interaction is InteractionState.Dragged or InteractionState.Clicked)
+        {
+            CancelScriptedFlight();
+            return;
+        }
+
+        _scriptedElapsed += delta;
+        if (_scriptedElapsed >= ScriptedTimeout || HasScriptedSettled())
+            PollNow();
+    }
+
+    bool HasScriptedSettled()
+    {
+        if (_scriptedElapsed < ScriptedMinAirTime)
+            return false;
+        if (Sleeping)
+            return true;
+        return LinearVelocity.Length() < ScriptedLinearSleep
+            && AngularVelocity.Length() < ScriptedAngularSleep;
+    }
+
+    void CompleteScriptedFlight()
+    {
+        if (!_scriptedFlight)
+            return;
+
+        var slot = _flightSlot;
+        _scriptedFlight = false;
+
+        Freeze = true;
+        GlobalTransform = _map.AlignSlotToWorldUp(GlobalTransform, slot);
+        LinearVelocity = Vector3.Zero;
+        AngularVelocity = Vector3.Zero;
+        Sleeping = true;
+        _snapHold = ScriptedSnapHold;
+    }
 }

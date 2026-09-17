@@ -39,6 +39,22 @@ public sealed class FaceLayout
         Changed?.Invoke();
     }
 
+    public bool TryGetSlotByContentId(string contentId, out FaceSlotId slot)
+    {
+        ArgumentNullException.ThrowIfNull(contentId);
+        foreach (var (candidate, content) in _slots)
+        {
+            if (content.Id == contentId)
+            {
+                slot = candidate;
+                return true;
+            }
+        }
+
+        slot = FaceSlotId.None;
+        return false;
+    }
+
     public FaceLayout Clone() => new(_slots);
 }
 

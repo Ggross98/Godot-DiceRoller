@@ -21,6 +21,9 @@ public partial class DiceManager : Node3D, IDiceTable
     [Export]
     public float AreaScale { get; set; } = 0.2f;
 
+    [Export]
+    public RollResolveMode ResolveMode { get; set; } = RollResolveMode.Physics;
+
     public DieBody? LastSpawned { get; private set; }
 
     public int Count
@@ -106,6 +109,14 @@ public partial class DiceManager : Node3D, IDiceTable
         if (die.Locked || die.Freeze)
             die.SetLocked(false);
 
+        if (ResolveMode == RollResolveMode.Scripted)
+        {
+            int pick = (int)(GD.Randi() % (uint)die.FaceMap.Samples.Count);
+            die.BeginScriptedFlight(ScriptedTargets.Resolve(die.FaceMap, die.ScriptedSlot, pick));
+        }
+        else
+            die.CancelScriptedFlight();
+
         int maxUp = (int)Math.Ceiling(AreaScale * 5f) * 5;
         die.LinearVelocity = new Vector3(
             RandomValueInRange(1, 3, true),
@@ -115,6 +126,7 @@ public partial class DiceManager : Node3D, IDiceTable
             RandomValueInRange(5, 10, true),
             RandomValueInRange(5, 10, true),
             RandomValueInRange(5, 10, true));
+        die.Sleeping = false;
     }
 
     public void LockValid()

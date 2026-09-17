@@ -17,6 +17,7 @@ public interface IDiceTable
     void RollAll();
     void RollInvalid();
     void LockValid();
+    RollResolveMode ResolveMode { get; set; }
     int Count { get; }
     event Action<RollOutcome> Rolled;
 }

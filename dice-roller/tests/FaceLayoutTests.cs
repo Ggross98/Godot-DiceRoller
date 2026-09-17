@@ -65,4 +65,34 @@ public class FaceLayoutTests
         Assert.Equal(0, originalRaised);
         Assert.Equal(1, cloneRaised);
     }
+
+    [Fact]
+    public void TryGetSlotByContentId_finds_replaced_id()
+    {
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+        layout.Replace(new FaceSlotId(3), new FaceContent { Id = "fireball", Label = "Fireball" });
+
+        Assert.True(layout.TryGetSlotByContentId("fireball", out var slot));
+        Assert.Equal(3, slot.Value);
+    }
+
+    [Fact]
+    public void TryGetSlotByContentId_returns_first_duplicate()
+    {
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+        layout.Replace(new FaceSlotId(2), new FaceContent { Id = "hit", Label = "A" });
+        layout.Replace(new FaceSlotId(5), new FaceContent { Id = "hit", Label = "B" });
+
+        Assert.True(layout.TryGetSlotByContentId("hit", out var slot));
+        Assert.Equal(2, slot.Value);
+    }
+
+    [Fact]
+    public void TryGetSlotByContentId_missing_id_is_false()
+    {
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+
+        Assert.False(layout.TryGetSlotByContentId("missing", out var slot));
+        Assert.Equal(FaceSlotId.None, slot);
+    }
 }

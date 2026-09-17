@@ -55,6 +55,36 @@ public sealed class DieFaceMap
         return new UpSlotResult(true, highest);
     }
 
+    public Transform3D AlignSlotToWorldUp(Transform3D current, FaceSlotId slot)
+    {
+        RequireSlot(slot);
+        var worldDir = current.Basis * Samples[slot];
+        if (worldDir.LengthSquared() < 1e-12f)
+            return current;
+
+        var from = worldDir.Normalized();
+        var to = Vector3.Up;
+        if (from.IsEqualApprox(to))
+            return current;
+
+        Basis rotation;
+        if (from.IsEqualApprox(-to))
+            rotation = new Basis(Vector3.Right, Mathf.Pi);
+        else
+        {
+            var axis = from.Cross(to).Normalized();
+            rotation = new Basis(axis, from.AngleTo(to));
+        }
+
+        return new Transform3D(rotation * current.Basis, current.Origin);
+    }
+
+    public void RequireSlot(FaceSlotId slot)
+    {
+        if (slot == FaceSlotId.None || !Samples.ContainsKey(slot))
+            throw new ArgumentOutOfRangeException(nameof(slot), slot.Value, "Slot is not on this hull.");
+    }
+
     static FaceSlotId S(int value) => new(value);
 
     // Sample vectors copied verbatim from godot/dice/scripts/dN.gd. Do not normalize.

@@ -61,4 +61,22 @@ public class FaceReaderTests
         Assert.Equal(6, outcome.Slot.Value);
         Assert.Equal(6, outcome.Content.NumericValue);
     }
+
+    [Fact]
+    public void Aligning_replaced_slot_reads_new_content_id()
+    {
+        var map = DieFaceMap.For(HullKind.D6);
+        var layout = FaceLayouts.StandardNumeric(HullKind.D6);
+        layout.Replace(new FaceSlotId(1), new FaceContent { Id = "sword", Label = "Sword" });
+        var start = new Transform3D(
+            new Basis(Vector3.Up, 0.7f) * new Basis(Vector3.Right, 1.1f),
+            new Vector3(3f, -2f, 4f));
+
+        var aligned = map.AlignSlotToWorldUp(start, new FaceSlotId(1));
+        var outcome = FaceReader.Read(map, layout, aligned);
+
+        Assert.True(outcome.IsValid);
+        Assert.Equal(1, outcome.Slot.Value);
+        Assert.Equal("sword", outcome.Content.Id);
+    }
 }
